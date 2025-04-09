@@ -6,10 +6,46 @@ class OmiFlutter {
   static BluetoothDevice? connectedDevice;
   static List<BluetoothDevice> devicesList = [];
 
+  static const String audioServiceUUID = "19B10000-E8F2-537E-4F6C-D104768A1214";
+  static const String audioCharacteristicUUID =
+      "19B10001-E8F2-537E-4F6C-D104768A1214";
+  static const String audioCodecCharacteristicUUID =
+      "19B10002-E8F2-537E-4F6C-D104768A1214";
+  static const String lightCodecCharacteristicUUID =
+      "19B10003-E8F2-537E-4F6C-D104768A1214";
+
+  static const String batteryServiceUUID = "2A19";
+
+  static StreamSubscription? connectionSubscription;
+  static int batteryLevel = 0;
+  static bool isRecording = false;
+
+  static Map<String, BluetoothCharacteristic> characteristics = {};
+
+  static List<BluetoothService> services = [];
+
+  String guidToServiceMap(String uuid) {
+    switch (uuid) {
+      case audioServiceUUID:
+        return "audioService";
+      case batteryServiceUUID:
+        return "batteryService";
+      case audioCharacteristicUUID:
+        return "audioCharacteristic";
+      case audioCodecCharacteristicUUID:
+        return "audioCodecCharacteristic";
+      case lightCodecCharacteristicUUID:
+        return "lightCodecCharacteristic";
+      default:
+        return "unknown";
+    }
+  }
+
   /// Scans for Bluetooth devices
   ///
   /// Returns a stream of discovered devices.
   /// The scan will automatically stop after [timeout] duration.
+  ///
   Future<List<BluetoothDevice>> deviceScan() async {
     final completer = Completer<void>();
 
@@ -74,17 +110,44 @@ class OmiFlutter {
     }
   }
 
-  Future<List<BluetoothService>> retrieveDeviceInfo() async {
+  Map<String, BluetoothCharacteristic> testCharacteristics() {
     if (connectedDevice == null) {
-      return [];
+      return {};
+    }
+    print("services: ${services.length}");
+    services.forEach((service) {
+      service.characteristics.forEach((characteristic) {
+        print("characteristic: ${characteristic.characteristicUuid}");
+        var characteristicName = guidToServiceMap(
+          characteristic.characteristicUuid.str.toUpperCase(),
+        );
+
+        print("characteristicName: $characteristicName");
+
+        if (characteristicName != "unknown") {
+          print(
+            "found characteristic: ${characteristic.characteristicUuid.toString().toUpperCase()}",
+          );
+          characteristics[characteristicName] = characteristic;
+        }
+      });
+    });
+    return characteristics;
+  }
+
+  Future<Map<String, BluetoothCharacteristic>> retrieveDeviceInfo() async {
+    services = [];
+    if (connectedDevice == null) {
+      return {};
     }
     try {
       var characteristics = await connectedDevice!.discoverServices();
-      print(characteristics);
-      return characteristics;
+      services = characteristics;
+
+      return testCharacteristics();
     } catch (e) {
       print(e);
-      return [];
+      return {};
     }
   }
 }
