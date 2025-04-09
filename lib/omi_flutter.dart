@@ -88,6 +88,7 @@ class OmiFlutter {
       connectedDevice = devicesList.firstWhere(
         (element) => element.remoteId == deviceIdentifier,
       );
+      await retrieveDeviceInfo();
       return true;
     } catch (e) {
       print(e);
@@ -110,7 +111,7 @@ class OmiFlutter {
     }
   }
 
-  Map<String, BluetoothCharacteristic> testCharacteristics() {
+  Map<String, BluetoothCharacteristic> mapCharacteristics() {
     if (connectedDevice == null) {
       return {};
     }
@@ -132,6 +133,11 @@ class OmiFlutter {
         }
       });
     });
+    if (characteristics.isEmpty) {
+      print("No characteristics found");
+    } else {
+      print("Successfully mapped characteristics");
+    }
     return characteristics;
   }
 
@@ -143,11 +149,23 @@ class OmiFlutter {
     try {
       var characteristics = await connectedDevice!.discoverServices();
       services = characteristics;
-
-      return testCharacteristics();
+      print("Successfully retrieved services");
+      return mapCharacteristics();
     } catch (e) {
       print(e);
       return {};
+    }
+  }
+
+  Future<String> getBatteryLevel() async {
+    try {
+      var characteristic = characteristics["batteryService"];
+      var value = await characteristic?.read();
+      print("Battery level: $value");
+      return value.toString().replaceAll("[", "").replaceAll("]", "");
+    } catch (e) {
+      print(e);
+      return "ERROR";
     }
   }
 }
