@@ -1,4 +1,4 @@
-import 'package:flutter_blue/flutter_blue.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
 /// A Calculator.
 class Calculator {
@@ -7,35 +7,34 @@ class Calculator {
 }
 
 class OmiFlutter {
-  final FlutterBlue flutterBlue = FlutterBlue.instance;
   List<BluetoothDevice> devicesList = [];
 
   /// Scans for Bluetooth devices
   ///
   /// Returns a stream of discovered devices.
   /// The scan will automatically stop after [timeout] duration.
-  Stream<List<BluetoothDevice>> deviceScan({
-    Duration timeout = const Duration(seconds: 4),
-  }) {
-    // Clear previous results
-    devicesList.clear();
+  Future<List<BluetoothDevice>> deviceScan() async {
+    devicesList.clear(); // Clear existing devices before scanning
 
-    // Start scanning
-    flutterBlue.startScan(timeout: timeout);
-
-    // Listen to scan results
-    return flutterBlue.scanResults.map((results) {
-      for (ScanResult result in results) {
-        if (!devicesList.contains(result.device)) {
-          devicesList.add(result.device);
+    // Set up the listener before starting the scan
+    FlutterBluePlus.onScanResults.listen((results) {
+      if (results.isNotEmpty) {
+        ScanResult r = results.last; // the most recently found device
+        print('${r.device.remoteId}: "${r.advertisementData.advName}" found!');
+        if (!devicesList.contains(r.device)) {
+          devicesList.add(r.device);
         }
       }
-      return devicesList;
-    });
-  }
+    }, onError: (e) => print(e));
 
-  Future<void> stopScan() async {
-    await flutterBlue.stopScan();
+    // Start scan and wait for the full duration to collect devices
+    await FlutterBluePlus.startScan(timeout: Duration(seconds: 4));
+
+    // Wait for the scan to complete
+    await FlutterBluePlus.isScanning.where((val) => val == false).first;
+
+    // Return the collected devices
+    return List<BluetoothDevice>.from(devicesList);
   }
 
   Future<void> deviceConnect() async {
