@@ -1,7 +1,7 @@
 name: omi_flutter
-description: "A new Flutter package project."
+description: "A [WIP] Flutter package for the Omi.me AI listening device."
 version: 0.0.1
-homepage:
+homepage: https://github.com/dcrebbin/omi_flutter
 
 environment:
   sdk: ^3.7.2
@@ -20,7 +20,6 @@ dev_dependencies:
 # following page: https://dart.dev/tools/pub/pubspec
 
 # The following section is specific to Flutter packages.
-flutter:
 
   # To add assets to your package, add an assets section, like this:
   # assets:
