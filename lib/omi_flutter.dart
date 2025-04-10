@@ -117,6 +117,9 @@ class OmiFlutter {
     }
     print("services: ${services.length}");
     services.forEach((service) {
+      service.includedServices.forEach((includedService) {
+        print("includedService: ${includedService.serviceUuid}");
+      });
       service.characteristics.forEach((characteristic) {
         print("characteristic: ${characteristic.characteristicUuid}");
         var characteristicName = guidToServiceMap(
@@ -124,12 +127,21 @@ class OmiFlutter {
         );
 
         print("characteristicName: $characteristicName");
+        print("service guid: ${service.serviceUuid}");
+        if (service.primaryService != null) {
+          print(
+            "primary service guid: ${service.primaryService?.primaryServiceUuid}",
+          );
+        }
 
         if (characteristicName != "unknown") {
           print(
             "found characteristic: ${characteristic.characteristicUuid.toString().toUpperCase()}",
           );
           characteristics[characteristicName] = characteristic;
+        } else {
+          characteristics[characteristic.characteristicUuid.toString()] =
+              characteristic;
         }
       });
     });
@@ -143,6 +155,7 @@ class OmiFlutter {
 
   Future<Map<String, BluetoothCharacteristic>> retrieveDeviceInfo() async {
     services = [];
+    characteristics = {};
     if (connectedDevice == null) {
       return {};
     }
@@ -157,11 +170,37 @@ class OmiFlutter {
     }
   }
 
+  Future<Stream<List<int>>> getAudioCharacteristic() async {
+    try {
+      var characteristic = characteristics["audioCharacteristic"];
+      if (characteristic == null) {
+        throw Exception("Audio characteristic not found");
+      }
+      await characteristic.setNotifyValue(true);
+      return characteristic.onValueReceived;
+    } catch (e) {
+      print(e);
+      rethrow;
+    }
+  }
+
   Future<String> getBatteryLevel() async {
     try {
       var characteristic = characteristics["batteryService"];
       var value = await characteristic?.read();
       print("Battery level: $value");
+      return value.toString().replaceAll("[", "").replaceAll("]", "");
+    } catch (e) {
+      print(e);
+      return "ERROR";
+    }
+  }
+
+  Future<String> getLightCharacteristic() async {
+    try {
+      var characteristic = characteristics["lightCodecCharacteristic"];
+      var value = await characteristic?.read();
+      print("Light characteristic: $value");
       return value.toString().replaceAll("[", "").replaceAll("]", "");
     } catch (e) {
       print(e);
